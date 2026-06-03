@@ -23,6 +23,10 @@ function sanitizeProjectName(repoName) {
  */
 function getFrameworkSettings(framework) {
   switch (framework) {
+    case 'html':
+      return {
+        framework: null
+      };
     case 'flutter':
       return {
         framework: 'other',
