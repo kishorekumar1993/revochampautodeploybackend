@@ -1,0 +1,170 @@
+{
+	"info": {
+		"_postman_id": "8b51d8b9-4a0b-48c5-9c8c-6e274a1f5926",
+		"name": "Revochamp Auto-Deployment Backend",
+		"description": "Collection to test the Revochamp auto-deployment system backend endpoints (GitHub connecting, Vercel connecting, project deploying, and status checking).",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "OAuth Connections",
+			"item": [
+				{
+					"name": "Connect GitHub",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{backend_url}}/github/connect",
+							"host": [
+								"{{backend_url}}"
+							],
+							"path": [
+								"github",
+								"connect"
+							]
+						},
+						"description": "Redirects the browser to connect and authorize GitHub OAuth."
+					},
+					"response": []
+				},
+				{
+					"name": "Connect Vercel",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{backend_url}}/vercel/connect",
+							"host": [
+								"{{backend_url}}"
+							],
+							"path": [
+								"vercel",
+								"connect"
+							]
+						},
+						"description": "Redirects the browser to connect and authorize Vercel OAuth."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Projects",
+			"item": [
+				{
+					"name": "Create & Deploy (Simple HTML)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"repoName\": \"revochamp-html-site\",\n  \"framework\": \"html\",\n  \"websiteHtml\": \"<h1>Hello from RevoChamp Auto Deploy!</h1>\"\n}"
+						},
+						"url": {
+							"raw": "{{backend_url}}/project/create-and-deploy",
+							"host": [
+								"{{backend_url}}"
+							],
+							"path": [
+								"project",
+								"create-and-deploy"
+							]
+						},
+						"description": "Creates a GitHub repository and deploys a single HTML file to Vercel."
+					},
+					"response": []
+				},
+				{
+					"name": "Create & Deploy (Multi-file React/Vite)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"repoName\": \"revochamp-react-site\",\n  \"framework\": \"react\",\n  \"files\": [\n    {\n      \"path\": \"index.html\",\n      \"content\": \"<!DOCTYPE html><html><head><title>React App</title></head><body><div id=\\\"root\\\"></div><script type=\\\"module\\\" src=\\\"/src/main.jsx\\\"></script></body></html>\"\n    },\n    {\n      \"path\": \"src/main.jsx\",\n      \"content\": \"import React from 'react';\\nimport ReactDOM from 'react-dom/client';\\nReactDOM.createRoot(document.getElementById('root')).render(<h1>Hello from React!</h1>);\"\n    },\n    {\n      \"path\": \"package.json\",\n      \"content\": \"{\\n  \\\"name\\\": \\\"react-app\\\",\\n  \\\"private\\\": true,\\n  \\\"version\\\": \\\"0.0.0\\\",\\n  \\\"type\\\": \\\"module\\\",\\n  \\\"scripts\\\": {\\n    \\\"dev\\\": \\\"vite\\\",\\n    \\\"build\\\": \\\"vite build\\\"\\n  },\\n  \\\"dependencies\\\": {\\n    \\\"react\\\": \\\"^18.2.0\\\",\\n    \\\"react-dom\\\": \\\"^18.2.0\\\"\\n  },\\n  \\\"devDependencies\\\": {\\n    \\\"vite\\\": \\\"^4.4.5\\\"\\n  }\\n}\"\n    }\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{backend_url}}/project/create-and-deploy",
+							"host": [
+								"{{backend_url}}"
+							],
+							"path": [
+								"project",
+								"create-and-deploy"
+							]
+						},
+						"description": "Creates a GitHub repository and deploys multiple files as a React project to Vercel."
+					},
+					"response": []
+				},
+				{
+					"name": "Check Deployment Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{backend_url}}/project/deployment/status/:deploymentId",
+							"host": [
+								"{{backend_url}}"
+							],
+							"path": [
+								"project",
+								"deployment",
+								"status",
+								":deploymentId"
+							],
+							"variable": [
+								{
+									"key": "deploymentId",
+									"value": "dpl_xxxxxxxxxxxx"
+								}
+							]
+						},
+						"description": "Fetches the current build/deployment status from Vercel using the deployment ID."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "backend_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		}
+	]
+}
