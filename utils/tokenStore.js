@@ -2,7 +2,9 @@ const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
 
-const tokenFilePath = path.join(__dirname, '../tokens.json');
+const tokenFilePath = process.env.VERCEL
+  ? '/tmp/tokens.json'
+  : path.join(__dirname, '../tokens.json');
 
 // Mongoose schema (if MONGODB_URI is provided)
 let UserToken;
