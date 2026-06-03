@@ -256,8 +256,8 @@ router.get('/deployment/status/:deploymentId', async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   const { getDeploymentStatus } = require('../services/vercelService');
-  const status = await getDeploymentStatus(tokens.vercelToken, deploymentId);
-  res.json({ status });
+  const deployment = await getDeploymentStatus(tokens.vercelToken, deploymentId);
+  res.json({ status: deployment ? deployment.status : null });
 });
 
 // GET /deployment/logs/:deploymentId
