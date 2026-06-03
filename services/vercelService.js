@@ -17,7 +17,7 @@ async function createProject(vercelToken, repoFullName, repoName, framework) {
 
   // Configure framework presets and build commands
   if (framework === 'flutter') {
-    settings.framework = null; // No native Flutter preset, we configure custom build commands
+    settings.framework = 'other'; // No native Flutter preset, we configure custom build commands
     settings.buildCommand = 'bash vercel-build.sh';
     settings.outputDirectory = 'build/web';
     settings.installCommand = ''; // Handled by vercel-build.sh during the build phase
@@ -65,18 +65,41 @@ async function createProject(vercelToken, repoFullName, repoName, framework) {
  */
 async function createDeployment(vercelToken, repoFullName, repoId, repoName, framework, defaultBranch = 'main') {
   // First ensure project is created and linked
-  await createProject(vercelToken, repoFullName, repoName, framework);
+  const project = await createProject(vercelToken, repoFullName, repoName, framework);
 
   const name = repoName.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+  
+  const projectSettings = {};
+  if (framework === 'flutter') {
+    projectSettings.framework = 'other';
+    projectSettings.buildCommand = 'bash vercel-build.sh';
+    projectSettings.outputDirectory = 'build/web';
+    projectSettings.installCommand = '';
+  } else if (framework === 'nextjs') {
+    projectSettings.framework = 'nextjs';
+  } else if (framework === 'react' || framework === 'vite') {
+    projectSettings.framework = 'vite';
+    projectSettings.buildCommand = 'npm run build';
+    projectSettings.outputDirectory = 'dist';
+    projectSettings.installCommand = 'npm install';
+  }
+
   try {
-    const response = await axios.post('https://api.vercel.com/v13/deployments', {
+    const payload = {
       name,
+      project: project.id,
       gitSource: {
         type: 'github',
         repoId: String(repoId),
         ref: defaultBranch
       }
-    }, {
+    };
+
+    if (Object.keys(projectSettings).length > 0) {
+      payload.projectSettings = projectSettings;
+    }
+
+    const response = await axios.post('https://api.vercel.com/v13/deployments?skipAutoDetectionConfirmation=1', payload, {
       headers: { Authorization: `Bearer ${vercelToken}` }
     });
     return response.data;
