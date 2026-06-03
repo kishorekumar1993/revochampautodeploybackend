@@ -44,7 +44,14 @@ async function createProject(vercelToken, repoFullName, repoName, framework) {
         });
         return getResponse.data;
       } catch (getErr) {
+        console.error('Vercel project creation POST failed:', error.response?.data || error.message);
         console.error('Failed to get existing Vercel project:', getErr.response?.data || getErr.message);
+        
+        // If the GET request fails with 404 (Not Found), the project doesn't exist,
+        // so the original POST error is the true cause of failure.
+        if (getErr.response && getErr.response.status === 404) {
+          throw error;
+        }
         throw getErr;
       }
     }

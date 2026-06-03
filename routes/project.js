@@ -228,8 +228,12 @@ _flutter.loader.load();
       deploymentId: deployment.id
     });
   } catch (error) {
-    console.error(error.response?.data || error.message);
-    res.status(500).json({ error: 'Deployment failed' });
+    const errorDetails = error.response?.data || error.message;
+    console.error('Deployment error:', errorDetails);
+    res.status(500).json({ 
+      error: 'Deployment failed', 
+      details: errorDetails 
+    });
   }
 });
 
