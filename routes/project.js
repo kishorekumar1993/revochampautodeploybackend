@@ -9,7 +9,22 @@ const { createDeployment } = require('../services/vercelService');
 router.post('/create-and-deploy', async (req, res) => {
   const { repoName, websiteHtml, files } = req.body;
   let framework = req.body.framework;
-  const tokens = await getTokens(req.session);
+  
+  const githubToken = req.headers['x-github-token'] || req.body.githubToken;
+  const vercelToken = req.headers['x-vercel-token'] || req.body.vercelToken;
+  const githubUsername = req.headers['x-github-username'] || req.body.githubUsername;
+  const explicitUserId = req.headers['x-user-id'] || req.body.userId;
+
+  let tokens = {};
+  if (githubToken && vercelToken) {
+    tokens = { githubToken, vercelToken, githubUsername };
+  } else {
+    tokens = await getTokens(req.session, explicitUserId);
+    // Fallback to reading headers if session didn't have them but headers did
+    if (!tokens.githubToken && githubToken) tokens.githubToken = githubToken;
+    if (!tokens.githubUsername && githubUsername) tokens.githubUsername = githubUsername;
+    if (!tokens.vercelToken && vercelToken) tokens.vercelToken = vercelToken;
+  }
   
   if (!tokens.githubToken) {
     return res.status(401).json({ error: 'GitHub not connected' });
@@ -221,7 +236,18 @@ _flutter.loader.load();
 // GET /deployment/status/:deploymentId
 router.get('/deployment/status/:deploymentId', async (req, res) => {
   const { deploymentId } = req.params;
-  const tokens = await getTokens(req.session);
+  
+  const vercelToken = req.headers['x-vercel-token'] || req.query.vercelToken;
+  const explicitUserId = req.headers['x-user-id'] || req.query.userId;
+  
+  let tokens = {};
+  if (vercelToken) {
+    tokens = { vercelToken };
+  } else {
+    tokens = await getTokens(req.session, explicitUserId);
+    if (!tokens.vercelToken && vercelToken) tokens.vercelToken = vercelToken;
+  }
+
   if (!tokens.vercelToken) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
@@ -233,7 +259,18 @@ router.get('/deployment/status/:deploymentId', async (req, res) => {
 // GET /deployment/logs/:deploymentId
 router.get('/deployment/logs/:deploymentId', async (req, res) => {
   const { deploymentId } = req.params;
-  const tokens = await getTokens(req.session);
+  
+  const vercelToken = req.headers['x-vercel-token'] || req.query.vercelToken;
+  const explicitUserId = req.headers['x-user-id'] || req.query.userId;
+  
+  let tokens = {};
+  if (vercelToken) {
+    tokens = { vercelToken };
+  } else {
+    tokens = await getTokens(req.session, explicitUserId);
+    if (!tokens.vercelToken && vercelToken) tokens.vercelToken = vercelToken;
+  }
+
   if (!tokens.vercelToken) {
     return res.status(401).json({ error: 'Unauthorized' });
   }

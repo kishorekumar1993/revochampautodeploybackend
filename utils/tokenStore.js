@@ -107,12 +107,8 @@ async function setVercelToken(session, token) {
   }
 }
 
-async function getTokens(session) {
-  if (!session) {
-    return { githubToken: null, githubUsername: null, vercelToken: null };
-  }
-  
-  const userId = await getOrCreateUserId(session);
+async function getTokens(session, explicitUserId) {
+  const userId = explicitUserId || (session ? await getOrCreateUserId(session) : 'default_user');
   await initDb();
   
   let dbTokens = null;
@@ -128,9 +124,9 @@ async function getTokens(session) {
   }
   
   return {
-    githubToken: dbTokens?.githubToken || session.githubToken || null,
-    githubUsername: dbTokens?.githubUsername || session.githubUsername || null,
-    vercelToken: dbTokens?.vercelToken || session.vercelToken || null
+    githubToken: dbTokens?.githubToken || session?.githubToken || null,
+    githubUsername: dbTokens?.githubUsername || session?.githubUsername || null,
+    vercelToken: dbTokens?.vercelToken || session?.vercelToken || null
   };
 }
 

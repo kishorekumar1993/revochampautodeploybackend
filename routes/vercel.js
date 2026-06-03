@@ -32,9 +32,12 @@ router.get('/callback', async (req, res) => {
     });
     const vercelToken = tokenRes.data.access_token;
     await setVercelToken(req.session, vercelToken);
+    
+    const { getOrCreateUserId } = require('../utils/tokenStore');
+    const userId = await getOrCreateUserId(req.session);
+    
     const redirectUrl = (req.session.frontendUrl || process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
-    res.redirect(`${redirectUrl}`);
-    // res.redirect(`${redirectUrl}/dashboard`);
+    res.redirect(`${redirectUrl}?vercelToken=${encodeURIComponent(vercelToken)}&userId=${encodeURIComponent(userId)}`);
   } catch (error) {
     console.error(error.response?.data || error.message);
     res.status(500).send('Vercel OAuth failed');

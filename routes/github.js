@@ -43,9 +43,12 @@ router.get('/callback', async (req, res) => {
     });
     const username = userRes.data.login;
     await setGitHubToken(req.session, githubToken, username);
+    
+    const { getOrCreateUserId } = require('../utils/tokenStore');
+    const userId = await getOrCreateUserId(req.session);
+    
     const redirectUrl = (req.session.frontendUrl || process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
-    res.redirect(`${redirectUrl}`); // frontend success URL
-    // res.redirect(`${redirectUrl}/dashboard`); // frontend success URL
+    res.redirect(`${redirectUrl}?githubToken=${encodeURIComponent(githubToken)}&githubUsername=${encodeURIComponent(username)}&userId=${encodeURIComponent(userId)}`);
   } catch (error) {
     console.error(error.response?.data || error.message);
     res.status(500).send('GitHub OAuth failed');
