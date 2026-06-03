@@ -29,7 +29,7 @@ function getFrameworkSettings(framework) {
       };
     case 'flutter':
       return {
-        framework: 'flutter',
+        framework: null,
         buildCommand: 'bash vercel-build.sh',
         outputDirectory: 'build/web',
         installCommand: ''
