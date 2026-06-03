@@ -7,9 +7,8 @@ const { createDeployment } = require('../services/vercelService');
 
 // POST /project/create-and-deploy
 router.post('/create-and-deploy', async (req, res) => {
-  const sessionId = req.session.id;
   const { repoName, websiteHtml, files, framework } = req.body;
-  const tokens = getTokens(sessionId);
+  const tokens = getTokens(req.session);
   
   if (!tokens.githubToken) {
     return res.status(401).json({ error: 'GitHub not connected' });
@@ -85,15 +84,32 @@ router.post('/create-and-deploy', async (req, res) => {
 
 // GET /deployment/status/:deploymentId
 router.get('/deployment/status/:deploymentId', async (req, res) => {
-  const sessionId = req.session.id;
   const { deploymentId } = req.params;
-  const tokens = getTokens(sessionId);
+  const tokens = getTokens(req.session);
   if (!tokens.vercelToken) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   const { getDeploymentStatus } = require('../services/vercelService');
   const status = await getDeploymentStatus(tokens.vercelToken, deploymentId);
   res.json({ status });
+});
+
+// GET /deployment/logs/:deploymentId
+router.get('/deployment/logs/:deploymentId', async (req, res) => {
+  const { deploymentId } = req.params;
+  const tokens = getTokens(req.session);
+  if (!tokens.vercelToken) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  try {
+    const response = await axios.get(`https://api.vercel.com/v2/deployments/${deploymentId}/events`, {
+      headers: { Authorization: `Bearer ${tokens.vercelToken}` }
+    });
+    res.json(response.data);
+  } catch (error) {
+    console.error(`Failed to fetch logs for deployment ${deploymentId}:`, error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to fetch logs' });
+  }
 });
 
 module.exports = router;

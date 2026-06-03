@@ -23,7 +23,6 @@ router.get('/connect', (req, res) => {
 
 router.get('/callback', async (req, res) => {
   const { code } = req.query;
-  const sessionId = req.session.id;
   try {
     const tokenRes = await axios.post('https://api.vercel.com/v2/oauth/access_token', {
       client_id: process.env.VERCEL_CLIENT_ID,
@@ -32,7 +31,7 @@ router.get('/callback', async (req, res) => {
       redirect_uri: process.env.VERCEL_REDIRECT_URI,
     });
     const vercelToken = tokenRes.data.access_token;
-    setVercelToken(sessionId, vercelToken);
+    setVercelToken(req.session, vercelToken);
     const redirectUrl = (req.session.frontendUrl || process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
     res.redirect(`${redirectUrl}`);
     // res.redirect(`${redirectUrl}/dashboard`);

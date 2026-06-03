@@ -18,9 +18,9 @@ async function createProject(vercelToken, repoFullName, repoName, framework) {
   // Configure framework presets and build commands
   if (framework === 'flutter') {
     settings.framework = null; // No native Flutter preset, we configure custom build commands
-    settings.buildCommand = 'flutter/bin/flutter build web --release';
+    settings.buildCommand = 'bash vercel-build.sh';
     settings.outputDirectory = 'build/web';
-    settings.installCommand = 'if cd flutter; then git pull && cd .. ; else git clone https://github.com/flutter/flutter.git; fi && ls && flutter/bin/flutter doctor && flutter/bin/flutter clean && flutter/bin/flutter config --enable-web';
+    settings.installCommand = ''; // Handled by vercel-build.sh during the build phase
   } else if (framework === 'nextjs') {
     settings.framework = 'nextjs';
   } else if (framework === 'react' || framework === 'vite') {

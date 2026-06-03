@@ -77,18 +77,24 @@ async function pushWebsite(githubToken, repoFullName, files) {
   const commitSha = await getCommitSha(githubToken, repoFullName, branch);
   const treeSha = await getTreeSha(githubToken, repoFullName, commitSha);
 
-  // Create blobs for all files in parallel
-  const treeNodes = await Promise.all(
-    files.map(async (file) => {
-      const fileSha = await createBlob(githubToken, repoFullName, file.content);
-      return {
-        path: file.path,
-        mode: '100644',
-        type: 'blob',
-        sha: fileSha
-      };
-    })
-  );
+  const treeNodes = [];
+  const BATCH_SIZE = 5;
+
+  for (let i = 0; i < files.length; i += BATCH_SIZE) {
+    const batch = files.slice(i, i + BATCH_SIZE);
+    const results = await Promise.all(
+      batch.map(async (file) => {
+        const fileSha = await createBlob(githubToken, repoFullName, file.content);
+        return {
+          path: file.path,
+          mode: '100644',
+          type: 'blob',
+          sha: fileSha
+        };
+      })
+    );
+    treeNodes.push(...results);
+  }
 
   // Create the new tree combining the base tree and new nodes
   const treeResponse = await axios.post(`https://api.github.com/repos/${repoFullName}/git/trees`, {

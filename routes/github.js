@@ -23,7 +23,6 @@ router.get('/connect', (req, res) => {
 
 router.get('/callback', async (req, res) => {
   const { code } = req.query;
-  const sessionId = req.session.id;
   try {
     // Exchange code for token
     const tokenRes = await axios.post('https://github.com/login/oauth/access_token', {
@@ -38,7 +37,7 @@ router.get('/callback', async (req, res) => {
       headers: { Authorization: `Bearer ${githubToken}` }
     });
     const username = userRes.data.login;
-    setGitHubToken(sessionId, githubToken, username);
+    setGitHubToken(req.session, githubToken, username);
     const redirectUrl = (req.session.frontendUrl || process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
     res.redirect(`${redirectUrl}`); // frontend success URL
     // res.redirect(`${redirectUrl}/dashboard`); // frontend success URL

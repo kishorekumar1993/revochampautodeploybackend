@@ -1,27 +1,27 @@
-// Simple in-memory store (one user per session)
-const userTokens = {}; // { userId: { githubToken, vercelToken, githubUsername, vercelUserId } }
-let nextUserId = 1;
+// Simple helper functions to get/set tokens inside cookie session
 
-function getOrCreateUserId(sessionId) {
-  if (!userTokens[sessionId]) {
-    userTokens[sessionId] = { userId: nextUserId++ };
+function getOrCreateUserId(session) {
+  if (!session.userId) {
+    session.userId = Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
   }
-  return userTokens[sessionId].userId;
+  return session.userId;
 }
 
-function setGitHubToken(sessionId, token, username) {
-  if (!userTokens[sessionId]) userTokens[sessionId] = {};
-  userTokens[sessionId].githubToken = token;
-  userTokens[sessionId].githubUsername = username;
+function setGitHubToken(session, token, username) {
+  session.githubToken = token;
+  session.githubUsername = username;
 }
 
-function setVercelToken(sessionId, token) {
-  if (!userTokens[sessionId]) userTokens[sessionId] = {};
-  userTokens[sessionId].vercelToken = token;
+function setVercelToken(session, token) {
+  session.vercelToken = token;
 }
 
-function getTokens(sessionId) {
-  return userTokens[sessionId] || {};
+function getTokens(session) {
+  return {
+    githubToken: session ? session.githubToken : null,
+    githubUsername: session ? session.githubUsername : null,
+    vercelToken: session ? session.vercelToken : null
+  };
 }
 
 module.exports = { getOrCreateUserId, setGitHubToken, setVercelToken, getTokens };
