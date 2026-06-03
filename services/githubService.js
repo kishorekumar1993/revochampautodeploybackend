@@ -72,12 +72,34 @@ async function updateBranch(githubToken, repoFullName, branch, commitSha) {
   });
 }
 
-async function pushWebsite(githubToken, repoFullName, websiteHtml) {
+async function pushWebsite(githubToken, repoFullName, files) {
   const branch = await getDefaultBranch(githubToken, repoFullName);
   const commitSha = await getCommitSha(githubToken, repoFullName, branch);
   const treeSha = await getTreeSha(githubToken, repoFullName, commitSha);
-  const fileSha = await createBlob(githubToken, repoFullName, websiteHtml);
-  const newTreeSha = await createTree(githubToken, repoFullName, treeSha, fileSha, 'index.html');
+
+  // Create blobs for all files in parallel
+  const treeNodes = await Promise.all(
+    files.map(async (file) => {
+      const fileSha = await createBlob(githubToken, repoFullName, file.content);
+      return {
+        path: file.path,
+        mode: '100644',
+        type: 'blob',
+        sha: fileSha
+      };
+    })
+  );
+
+  // Create the new tree combining the base tree and new nodes
+  const treeResponse = await axios.post(`https://api.github.com/repos/${repoFullName}/git/trees`, {
+    base_tree: treeSha,
+    tree: treeNodes
+  }, {
+    headers: { Authorization: `Bearer ${githubToken}` }
+  });
+  const newTreeSha = treeResponse.data.sha;
+
+  // Create and push the commit
   const newCommitSha = await createCommit(githubToken, repoFullName, 'Add website files', newTreeSha, commitSha);
   await updateBranch(githubToken, repoFullName, branch, newCommitSha);
   return true;
