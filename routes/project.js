@@ -220,7 +220,7 @@ _flutter.loader.load();
 
     // 3. Trigger Vercel deployment
     const defaultBranch = repo.default_branch || 'main';
-    const deployment = await createDeployment(tokens.vercelToken, repoFullName, repoId, repoName, framework, defaultBranch);
+    const deployment = await createDeployment(tokens.vercelToken, repoFullName, repoId, repoName, framework, defaultBranch, projectFiles);
 
     res.json({
       repoUrl: repo.html_url,

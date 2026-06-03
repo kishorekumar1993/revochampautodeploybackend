@@ -29,7 +29,7 @@ function getFrameworkSettings(framework) {
       };
     case 'flutter':
       return {
-        framework: 'other',
+        framework: 'flutter',
         buildCommand: 'bash vercel-build.sh',
         outputDirectory: 'build/web',
         installCommand: ''
@@ -88,6 +88,35 @@ async function createProject(vercelToken, repoFullName, repoName, framework) {
     const response = await client.post('/v11/projects', payload);
     return response.data;
   } catch (error) {
+    const errorMsg = error.response?.data?.error?.message || '';
+    const isGitIntegrationError = errorMsg.includes('GitHub integration') || errorMsg.includes('install the GitHub integration');
+
+    if (isGitIntegrationError) {
+      console.log('GitHub integration not installed on Vercel. Falling back to non-Git project creation.');
+      const fallbackPayload = {
+        name,
+        ...frameworkSettings
+      };
+      try {
+        const response = await client.post('/v11/projects', fallbackPayload);
+        const project = response.data;
+        project.isGitFallback = true;
+        return project;
+      } catch (fallbackError) {
+        if (fallbackError.response?.status === 409) {
+          try {
+            const existing = await client.get(`/v11/projects/${name}`);
+            const project = existing.data;
+            project.isGitFallback = true;
+            return project;
+          } catch (getErr) {
+            throw fallbackError;
+          }
+        }
+        throw fallbackError;
+      }
+    }
+
     // Only handle conflict (project name already taken) by retrieving the existing project.
     // Other 4xx errors (e.g., invalid parameters) should be thrown immediately.
     if (error.response?.status === 409) {
@@ -98,12 +127,22 @@ async function createProject(vercelToken, repoFullName, repoName, framework) {
 
         // If the project isn't linked to the GitHub repo, update it now
         if (!project.link || project.link.type !== 'github' || project.link.repo !== repoFullName) {
-          await client.patch(`/v11/projects/${project.id}`, {
-            gitRepository: {
-              type: 'github',
-              repo: repoFullName
+          try {
+            await client.patch(`/v11/projects/${project.id}`, {
+              gitRepository: {
+                type: 'github',
+                repo: repoFullName
+              }
+            });
+          } catch (patchErr) {
+            const patchMsg = patchErr.response?.data?.error?.message || '';
+            if (patchMsg.includes('GitHub integration') || patchMsg.includes('install the GitHub integration')) {
+              console.log('GitHub integration not installed on Vercel. Skipping project linkage update.');
+              project.isGitFallback = true;
+            } else {
+              throw patchErr;
             }
-          });
+          }
         }
         return project;
       } catch (getErr) {
@@ -127,7 +166,7 @@ async function createProject(vercelToken, repoFullName, repoName, framework) {
 /**
  * Triggers a deployment for the linked GitHub repository on Vercel.
  */
-async function createDeployment(vercelToken, repoFullName, repoId, repoName, framework, defaultBranch = 'main') {
+async function createDeployment(vercelToken, repoFullName, repoId, repoName, framework, defaultBranch = 'main', files = []) {
   if (!vercelToken || !repoFullName || !repoId || !repoName) {
     throw new Error('Missing required parameters: vercelToken, repoFullName, repoId, repoName');
   }
@@ -138,15 +177,31 @@ async function createDeployment(vercelToken, repoFullName, repoId, repoName, fra
   const client = createVercelClient(vercelToken);
   const name = sanitizeProjectName(repoName);
 
+  const isGitLinked = project.link && project.link.type === 'github' && project.link.repo === repoFullName && !project.isGitFallback;
+
   const deploymentPayload = {
     name,
-    project: project.id,
-    gitSource: {
+    project: project.id
+  };
+
+  if (isGitLinked) {
+    deploymentPayload.gitSource = {
       type: 'github',
       repoId: String(repoId),
       ref: defaultBranch
-    }
-  };
+    };
+  } else {
+    // Fallback: Deploy via direct file upload
+    console.log('Deploying via direct file upload to Vercel.');
+    deploymentPayload.files = files.map(f => {
+      const content = f.content || '';
+      return {
+        file: f.path,
+        data: Buffer.from(content).toString('base64'),
+        encoding: 'base64'
+      };
+    });
+  }
 
   // Attach framework-specific settings (if any) directly in the deployment request
   const settings = getFrameworkSettings(framework);
