@@ -17,7 +17,8 @@ router.get('/connect', (req, res) => {
     }
   }
 
-  const url = `https://github.com/login/oauth/authorize?client_id=${process.env.GITHUB_CLIENT_ID}&scope=repo`;
+  const redirectUri = process.env.GITHUB_REDIRECT_URI;
+  const url = `https://github.com/login/oauth/authorize?client_id=${process.env.GITHUB_CLIENT_ID}&scope=repo${redirectUri ? `&redirect_uri=${encodeURIComponent(redirectUri)}` : ''}`;
   res.redirect(url);
 });
 
@@ -25,11 +26,15 @@ router.get('/callback', async (req, res) => {
   const { code } = req.query;
   try {
     // Exchange code for token
-    const tokenRes = await axios.post('https://github.com/login/oauth/access_token', {
+    const tokenBody = {
       client_id: process.env.GITHUB_CLIENT_ID,
       client_secret: process.env.GITHUB_CLIENT_SECRET,
       code,
-    }, { headers: { Accept: 'application/json' } });
+    };
+    if (process.env.GITHUB_REDIRECT_URI) {
+      tokenBody.redirect_uri = process.env.GITHUB_REDIRECT_URI;
+    }
+    const tokenRes = await axios.post('https://github.com/login/oauth/access_token', tokenBody, { headers: { Accept: 'application/json' } });
 
     const githubToken = tokenRes.data.access_token;
     // Get user info
