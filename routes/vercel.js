@@ -31,7 +31,7 @@ router.get('/callback', async (req, res) => {
       redirect_uri: process.env.VERCEL_REDIRECT_URI,
     });
     const vercelToken = tokenRes.data.access_token;
-    setVercelToken(req.session, vercelToken);
+    await setVercelToken(req.session, vercelToken);
     const redirectUrl = (req.session.frontendUrl || process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
     res.redirect(`${redirectUrl}`);
     // res.redirect(`${redirectUrl}/dashboard`);

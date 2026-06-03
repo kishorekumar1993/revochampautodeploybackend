@@ -56,7 +56,7 @@ async function createProject(vercelToken, repoFullName, repoName, framework) {
 /**
  * Triggers a deployment for the linked GitHub repository on Vercel.
  */
-async function createDeployment(vercelToken, repoFullName, repoId, repoName, framework) {
+async function createDeployment(vercelToken, repoFullName, repoId, repoName, framework, defaultBranch = 'main') {
   // First ensure project is created and linked
   await createProject(vercelToken, repoFullName, repoName, framework);
 
@@ -67,7 +67,7 @@ async function createDeployment(vercelToken, repoFullName, repoId, repoName, fra
       gitSource: {
         type: 'github',
         repoId: String(repoId),
-        ref: 'main'
+        ref: defaultBranch
       }
     }, {
       headers: { Authorization: `Bearer ${vercelToken}` }

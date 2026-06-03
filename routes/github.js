@@ -37,7 +37,7 @@ router.get('/callback', async (req, res) => {
       headers: { Authorization: `Bearer ${githubToken}` }
     });
     const username = userRes.data.login;
-    setGitHubToken(req.session, githubToken, username);
+    await setGitHubToken(req.session, githubToken, username);
     const redirectUrl = (req.session.frontendUrl || process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
     res.redirect(`${redirectUrl}`); // frontend success URL
     // res.redirect(`${redirectUrl}/dashboard`); // frontend success URL
