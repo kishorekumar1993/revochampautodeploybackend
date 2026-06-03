@@ -5,6 +5,45 @@ const { getTokens } = require('../utils/tokenStore');
 const { createRepo, pushWebsite } = require('../services/githubService');
 const { createDeployment } = require('../services/vercelService');
 
+function parseCombinedCode(combinedCode, defaultFileName = 'index.html') {
+  const lines = combinedCode.split('\n');
+  const files = [];
+  let currentPath = null;
+  let currentContent = [];
+
+  for (const line of lines) {
+    if (line.trim().startsWith('// FILE:')) {
+      if (currentPath !== null) {
+        files.push({
+          path: currentPath,
+          content: currentContent.join('\n').trim()
+        });
+        currentContent = [];
+      }
+      currentPath = line.replace('// FILE:', '').trim();
+    } else {
+      if (line.includes('// ────────────────────────────────────────────────────────')) {
+        continue;
+      }
+      currentContent.push(line);
+    }
+  }
+
+  if (currentPath !== null) {
+    files.push({
+      path: currentPath,
+      content: currentContent.join('\n').trim()
+    });
+  } else if (combinedCode.trim().length > 0) {
+    files.push({
+      path: defaultFileName,
+      content: combinedCode
+    });
+  }
+
+  return files;
+}
+
 // POST /project/create-and-deploy
 router.post('/create-and-deploy', async (req, res) => {
   const { repoName, websiteHtml, files } = req.body;
@@ -56,7 +95,11 @@ router.post('/create-and-deploy', async (req, res) => {
     // 2. Prepare files to push
     let projectFiles = files;
     if (!projectFiles && websiteHtml) {
-      projectFiles = [{ path: 'index.html', content: websiteHtml }];
+      if (websiteHtml.includes('// FILE:')) {
+        projectFiles = parseCombinedCode(websiteHtml, 'index.html');
+      } else {
+        projectFiles = [{ path: 'index.html', content: websiteHtml }];
+      }
     }
 
     if (!projectFiles || projectFiles.length === 0) {
