@@ -39,7 +39,7 @@ router.get('/callback', async (req, res) => {
     });
     const username = userRes.data.login;
     setGitHubToken(sessionId, githubToken, username);
-    const redirectUrl = req.session.frontendUrl || process.env.FRONTEND_URL || 'http://localhost:5173';
+    const redirectUrl = (req.session.frontendUrl || process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
     res.redirect(`${redirectUrl}/dashboard`); // frontend success URL
   } catch (error) {
     console.error(error.response?.data || error.message);

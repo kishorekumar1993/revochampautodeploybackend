@@ -18,9 +18,13 @@ app.use(cors({
       return callback(null, true);
     }
     
-    // Allow the configured FRONTEND_URL
-    if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
-      return callback(null, true);
+    // Allow the configured FRONTEND_URL (normalize trailing slashes)
+    if (process.env.FRONTEND_URL) {
+      const normalizedFrontend = process.env.FRONTEND_URL.replace(/\/$/, '');
+      const normalizedOrigin = origin.replace(/\/$/, '');
+      if (normalizedOrigin === normalizedFrontend) {
+        return callback(null, true);
+      }
     }
     
     if (!isProduction) {
