@@ -3,7 +3,7 @@ const axios = require('axios');
 const router = express.Router();
 const { setVercelToken } = require('../utils/tokenStore');
 
-router.get('/connect', (req, res) => {
+router.get('/connect', async (req, res) => {
   const originQuery = req.query.origin;
   const referer = req.headers.referer;
   
@@ -15,6 +15,30 @@ router.get('/connect', (req, res) => {
     } catch (e) {
       // Ignore invalid URL
     }
+  }
+
+  // Fallback if Vercel Personal Access Token is configured in .env
+  if (process.env.VERCEL_TOKEN && 
+      process.env.VERCEL_TOKEN !== 'your_vercel_token_here' && 
+      !process.env.VERCEL_TOKEN.startsWith('your_')) {
+    try {
+      const vercelToken = process.env.VERCEL_TOKEN;
+      await setVercelToken(req.session, vercelToken);
+      
+      const { getOrCreateUserId } = require('../utils/tokenStore');
+      const userId = await getOrCreateUserId(req.session);
+      
+      const redirectUrl = (req.session.frontendUrl || process.env.FRONTEND_URL || 'http://localhost:5173').replace(/\/$/, '');
+      return res.redirect(`${redirectUrl}?vercelToken=${encodeURIComponent(vercelToken)}&userId=${encodeURIComponent(userId)}`);
+    } catch (error) {
+      console.error('Failed to set personal Vercel token:', error);
+      return res.status(500).send('Setting Vercel Token failed');
+    }
+  }
+
+  // Otherwise, use OAuth flow
+  if (!process.env.VERCEL_CLIENT_ID) {
+    return res.status(400).send('VERCEL_CLIENT_ID is not configured in backend .env. Please configure VERCEL_TOKEN for Personal Token fallback or VERCEL_CLIENT_ID for OAuth.');
   }
 
   const url = `https://vercel.com/integrations/oauth/authorize?client_id=${process.env.VERCEL_CLIENT_ID}&scope=read:user deployment:write project:write`;
